@@ -12,17 +12,32 @@ const Editor = () => {
   const [originalUrl, setOriginalUrl] = useState<string>("");
   const [processedUrl, setProcessedUrl] = useState<string>("");
 
-  const handleImageSelect = useCallback((file: File) => {
+  const handleImageSelect = useCallback(async (file: File) => {
     const url = URL.createObjectURL(file);
     setOriginalUrl(url);
     setState("processing");
 
-    // Simulate AI processing (replace with real API call)
-    setTimeout(() => {
-      // In production, this would be the processed image from backend
-      setProcessedUrl(url);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const response = await fetch(
+        "https://sujal02222.app.n8n.cloud/webhook-test/remove-background",
+        { method: "POST", body: formData }
+      );
+
+      if (!response.ok) throw new Error("Background removal failed");
+
+      const blob = await response.blob();
+      const processedBlobUrl = URL.createObjectURL(blob);
+      setProcessedUrl(processedBlobUrl);
       setState("result");
-    }, 2500);
+    } catch (err) {
+      console.error("Background removal error:", err);
+      setState("upload");
+      URL.revokeObjectURL(url);
+      setOriginalUrl("");
+    }
   }, []);
 
   const handleReset = useCallback(() => {
